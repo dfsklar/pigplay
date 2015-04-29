@@ -40,6 +40,33 @@ ILLUSTRATE peruser;
 
 SPLIT peruser INTO 
   bucketNewUsers IF (birthdates::birthdate IS NULL) OR ( ($today - birthdate) < 5 ),
-  bucketActiveUsers IF COUNT(rawPlusBirthdates) >= $minAcceptableActivityInWindow, 
-  bucketDormantUsers IF COUNT(rawPlusBirthdates) < $minAcceptableActivityInWindow;
+  bucketActiveUsers IF COUNT(peruserBeforeBirthdates::RAW) >= $minAcceptableActivityInWindow, 
+  bucketDormantUsers IF COUNT(peruserBeforeBirthdates::RAW) < $minAcceptableActivityInWindow;
 
+newUsers = FOREACH bucketNewUsers GENERATE group, 'N';  -- the 'group' is a userID
+activeUsers = FOREACH bucketActiveUsers GENERATE group, 'A';  -- the 'group' is a userID
+dormantUsers = FOREACH bucketDormantUsers GENERATE group, 'D'; -- the 'group' is a userID
+
+
+-----------------------------------------
+-- COUNT THE NUMBER IN EACH BUCKET
+-- Surely there's a better way to do this?
+-- 1) active
+gallActive = GROUP activeUsers ALL;
+countActive = FOREACH gallActive GENERATE COUNT(activeUsers);
+STORE countActive INTO 'countActive' USING PigStorage(',');
+-- 2) dormant
+gallDormant = GROUP dormantUsers ALL;
+countDormant = FOREACH gallDormant GENERATE COUNT(dormantUsers);
+STORE countDormant INTO 'countDormant' USING PigStorage(',');
+-- 3) new
+gallNew = GROUP newUsers ALL;
+countNew = FOREACH gallNew GENERATE COUNT(newUsers);
+STORE countNew INTO 'countNew' USING PigStorage(',');
+
+
+--------------------------------------------------------------
+-- SAVE THE ENTIRE USER DATABASE (union of active and dormant)
+--
+newState = UNION activeUsers, dormantUsers, newUsers;
+STORE newState INTO 'statetoday' USING PigStorage(',');
