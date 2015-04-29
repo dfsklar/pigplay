@@ -16,6 +16,7 @@ DELTAS = FILTER JOINME BY NOT (OLD::code == NEW::code);
 -- We are keenly interested in the *counts* of transitions in each direction, so
 -- let's compute the distinct transitions and produce a count for each.
 
+XYZ = FOREACH DELTAS GENERATE CONCAT($1, $3);
 
-DUMP DELTAS;
+DUMP XYZ;
 
