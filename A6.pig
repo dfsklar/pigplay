@@ -38,10 +38,19 @@ ILLUSTRATE peruser;
 
 -- DUMP peruser;
 
+
+
+-- Note: SPLIT is not like a switch... an item can end up being placed in any number of the buckets.
+-- So to achieve mutex, one must fully specify conditions, not assume "ELSE".
+
+DEFINE isNew(b) RETURNS result {
+  $result = (b IS NULL) OR ( ($today - b) < 5 );
+};  -- MACRO IS NOT WORKING, THIS IS BEGIN IGNORED. CHECK INTO "INLINE" MACROS.
+
 SPLIT peruser INTO 
-  bucketNewUsers IF (birthdates::birthdate IS NULL) OR ( ($today - birthdate) < 5 ),
-  bucketActiveUsers IF COUNT(peruserBeforeBirthdates::RAW) >= $minAcceptableActivityInWindow, 
-  bucketDormantUsers IF COUNT(peruserBeforeBirthdates::RAW) < $minAcceptableActivityInWindow;
+  bucketNewUsers IF (birthdates::birthdate IS NULL) OR ( ($today - birthdates::birthdate) < $newDuration ),
+  bucketActiveUsers IF NOT ((birthdates::birthdate IS NULL) OR ( ($today - birthdates::birthdate) < $newDuration )) AND (COUNT(peruserBeforeBirthdates::RAW) >= $minAcceptableActivityInWindow), 
+  bucketDormantUsers IF NOT ((birthdates::birthdate IS NULL) OR ( ($today - birthdates::birthdate) < $newDuration )) AND (COUNT(peruserBeforeBirthdates::RAW) < $minAcceptableActivityInWindow);
 
 newUsers = FOREACH bucketNewUsers GENERATE group, 'N';  -- the 'group' is a userID
 activeUsers = FOREACH bucketActiveUsers GENERATE group, 'A';  -- the 'group' is a userID
@@ -70,3 +79,6 @@ STORE countNew INTO 'countNew' USING PigStorage(',');
 --
 newState = UNION activeUsers, dormantUsers, newUsers;
 STORE newState INTO 'statetoday' USING PigStorage(',');
+
+-- SAVE A FRESH BIRTHDATE DATABASE
+

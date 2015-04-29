@@ -1,4 +1,4 @@
-$COUNThumans = 200;
+$COUNThumans = 10;
 $COUNTdays = 30;
 
 $datestart = "20150101";
