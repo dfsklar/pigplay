@@ -1,7 +1,7 @@
 -- This is a "diff" operation.
 
-OLD = LOAD 'oldstate' using PigStorage(',') as (user:chararray,code:chararray);
-NEW = LOAD 'newstate' using PigStorage(',') as (user:chararray,code:chararray);
+OLD = LOAD 'statetoday' using PigStorage(',') as (user:chararray,code:chararray);
+NEW = LOAD 'stateprev'  using PigStorage(',') as (user:chararray,code:chararray);
 
 -- "GROUP BY" did not work as it produced a bag -- JOIN is good in that it flattens the items being joined
 JOINME = JOIN OLD BY user, NEW BY user;

@@ -12,8 +12,16 @@ RAW = FILTER RAWALLDATES BY (dt > ($today - $windowSizeNumDays)) AND (dt < $toda
 PERUSER = GROUP RAW BY user;
 
 SPLIT PERUSER INTO BUCKETACTIVEUSERS IF COUNT(RAW) >= $minAcceptableActivityInWindow, BUCKETDORMANTUSERS IF COUNT(RAW) < $minAcceptableActivityInWindow;
-ACTIVEUSERS = FOREACH BUCKETACTIVEUSERS GENERATE group, 'A';
-DORMANTUSERS = FOREACH BUCKETDORMANTUSERS GENERATE group, 'D';
+ACTIVEUSERS = FOREACH BUCKETACTIVEUSERS GENERATE group, 'A';  -- the 'group' is a userID
+DORMANTUSERS = FOREACH BUCKETDORMANTUSERS GENERATE group, 'D'; -- the 'group' is a userID
+
+-- Try to count the number in each bucket
+GallACTIVE = group ACTIVEUSERS all;
+CountACTIVE = foreach GallACTIVE generate COUNT(ACTIVEUSERS);
+STORE CountACTIVE INTO 'countActive' USING PigStorage(',');
+GallDORMANT = group DORMANTUSERS all;
+CountDORMANT = foreach GallDORMANT generate COUNT(DORMANTUSERS);
+STORE CountDORMANT INTO 'countDormant' USING PigStorage(',');
 
 -- We now have divided users into two buckets and we're ready to dump a "NEWSTATE" table.
 NEWSTATE = UNION ACTIVEUSERS, DORMANTUSERS;
