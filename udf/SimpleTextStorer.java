@@ -9,7 +9,7 @@ import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -25,10 +25,10 @@ import org.apache.pig.ResourceSchema.ResourceFieldSchema;
 import org.apache.pig.ResourceStatistics;
 import org.apache.pig.StoreMetadata;
 import org.apache.pig.StoreFunc;
-import org.apache.pig.data.DataByteArray;
-import org.apache.pig.data.DataType;
-import org.apache.pig.data.Tuple;
-import org.apache.pig.data.DataBag;
+import org.apache.pig.data.*; //DataByteArray;
+//import org.apache.pig.data.DataType;
+//import org.apache.pig.data.Tuple;
+//import org.apache.pig.data.DataBag;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 import org.apache.pig.impl.util.UDFContext;
 import org.apache.pig.impl.util.Utils;
@@ -40,7 +40,6 @@ public class SimpleTextStorer extends StoreFunc {
     private byte fieldDel = '\t';
     private static final int BUFFER_SIZE = 1024;
     private static final String UTF8 = "UTF-8";
-
     public SimpleTextStorer() {
     }
 
@@ -48,7 +47,7 @@ public class SimpleTextStorer extends StoreFunc {
         this();
         if (delimiter.length() == 1) {
             this.fieldDel = (byte)delimiter.charAt(0);
-        } else if (delimiter.length() > delimiter.charAt(0) == '\\') {
+        } else if ( (delimiter.length() > 1)  &&  (delimiter.charAt(0) == '\\')) {
             switch (delimiter.charAt(1)) {
             case 't':
                 this.fieldDel = (byte)'\t';
@@ -56,7 +55,7 @@ public class SimpleTextStorer extends StoreFunc {
 
             case 'x':
                fieldDel =
-                   Integer.valueOf(delimiter.substring(2), 16).byteValue();
+                    Integer.valueOf(delimiter.substring(2), 16).byteValue();
                break;
             case 'u':
                 this.fieldDel =
@@ -67,7 +66,7 @@ public class SimpleTextStorer extends StoreFunc {
                 throw new RuntimeException("Unknown delimiter " + delimiter);
             }
         } else {
-            throw new RuntimeException("delimeter must be a single character");
+            throw new RuntimeException("PigStorage delimeter must be a single character");
         }
     }
 
@@ -80,7 +79,7 @@ public class SimpleTextStorer extends StoreFunc {
             Object field;
             try {
                 field = f.get(i);
-            } catch (ExecException ee) {
+            } catch (Exception ee) {
                 throw ee;
             }
 
@@ -139,7 +138,7 @@ public class SimpleTextStorer extends StoreFunc {
             byte[] b = ((DataByteArray)field).get();
             mOut.write(b, 0, b.length);
             break;
-        }
+                                 }
 
         case DataType.CHARARRAY:
             // oddly enough, writeBytes writes a string
@@ -175,7 +174,7 @@ public class SimpleTextStorer extends StoreFunc {
                 }
                 try {
                     putField(t.get(i));
-                } catch (ExecException ee) {
+                } catch (Exception ee) {
                     throw ee;
                 }
             }
@@ -185,24 +184,16 @@ public class SimpleTextStorer extends StoreFunc {
         case DataType.BAG:
             boolean bagHasNext = false;
             mOut.write(bagBeginDelim.getBytes(UTF8));
-            Iterator<Tuple> tupleIter = ((DataBag)field).iterator();
-            while(tupleIter.hasNext()) {
+            for (Tuple tt : ((DataBag)field)) {
                 if(bagHasNext) {
                     mOut.write(fieldDelim.getBytes(UTF8));
                 } else {
                     bagHasNext = true;
                 }
-                putField((Object)tupleIter.next());
+                putField((Object)tt);
             }
             mOut.write(bagEndDelim.getBytes(UTF8));
             break;
-
-        default: {
-            int errCode = 2108;
-            String msg = "Could not determine data type of field: " + field;
-            throw new ExecException(msg, errCode, PigException.BUG);
-        }
-
         }
     }
 
@@ -221,11 +212,12 @@ public class SimpleTextStorer extends StoreFunc {
         job.getConfiguration().set("mapred.textoutputformat.separator", "");
         FileOutputFormat.setOutputPath(job, new Path(location));
         if (location.endsWith(".bz2")) {
-            FileOutputFormat.setCompressOutput(job, true);
-            FileOutputFormat.setOutputCompressorClass(job,  BZip2Codec.class);
+            //FileOutputFormat.setCompressOutput(job, true);
+            //FileOutputFormat.setOutputCompressorClass(job,  BZip2Codec.class);
         }  else if (location.endsWith(".gz")) {
-            FileOutputFormat.setCompressOutput(job, true);
-            FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+            //FileOutputFormat.setCompressOutput(job, true);
+            //FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
         }
     }
 }
+

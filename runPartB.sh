@@ -1,4 +1,4 @@
-TODAY=20150107
+TODAY=20150112
 /bin/rm -rf countTransitionTypes
 pig -x local B1.pig || exit
 /bin/rm -rf                          countTransitionTypes_$TODAY

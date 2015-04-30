@@ -1,5 +1,5 @@
 # We now jump to three days later to do a compare.
-TODAY=20150107
+TODAY=20150112
 /bin/rm -rf stateprev
 mv statetoday stateprev
 /bin/rm -rf countActive countActive_$TODAY countDormant countDormant_$TODAY countNew countNew_$TODAY output_birthdates
